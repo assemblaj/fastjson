@@ -2,10 +2,11 @@ package fastjson
 
 import (
 	"fmt"
-	"github.com/valyala/fastjson/fastfloat"
 	"strconv"
 	"strings"
 	"unicode/utf16"
+
+	"github.com/valyala/fastjson/fastfloat"
 )
 
 // Parser parses JSON.
@@ -32,6 +33,11 @@ func (p *Parser) Parse(s string) (*Value, error) {
 	p.b = append(p.b[:0], s...)
 	p.c.reset()
 
+	// init value map
+	if p.c.mapped {
+		p.c.v = make(map[string][]string)
+	}
+
 	v, tail, err := parseValue(b2s(p.b), &p.c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse JSON: %s; unparsed tail: %q", err, startEndString(tail))
@@ -54,6 +60,11 @@ func (p *Parser) ParseBytes(b []byte) (*Value, error) {
 
 type cache struct {
 	vs []Value
+
+	// value map enabled
+	mapped bool
+
+	v map[string][]string // Maps values (all converted to strings) to root objects
 }
 
 func (c *cache) reset() {
@@ -234,6 +245,24 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 		// Parse value
 		s = skipWS(s)
 		kv.v, s, err = parseValue(s, c)
+
+		if c.mapped {
+			// set parent object for value
+			kv.v.p = o
+
+			// Update map[value][]root value
+			vstr := kv.v.String()
+
+			r := getRoot(o)
+
+			var rstr string
+			if r != nil {
+				rstr = r.String()
+			}
+
+			c.v[vstr] = append(c.v[vstr], rstr)
+		}
+
 		if err != nil {
 			return nil, s, fmt.Errorf("cannot parse object value: %s", err)
 		}
@@ -549,6 +578,7 @@ type Value struct {
 	a []*Value
 	s string
 	t Type
+	p *Value // Parent
 }
 
 // MarshalTo appends marshaled v to dst and returns the result.
@@ -962,3 +992,11 @@ var (
 	valueFalse = &Value{t: TypeFalse}
 	valueNull  = &Value{t: TypeNull}
 )
+
+func getRoot(v *Value) *Value {
+	var r *Value
+	for v.p != nil {
+		r = v.p
+	}
+	return r
+}
