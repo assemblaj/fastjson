@@ -6,13 +6,12 @@ import (
 	"testing"
 )
 
-func testValue1(t *testing.T) {
+func TestValue1(t *testing.T) {
 	var p Parser
-	fmt.Println("I'm here.")
 
 	p.c.mapped = true
 
-	c, err := ioutil.ReadFile("/testdata/small.json") // just pass the file name
+	c, err := ioutil.ReadFile("./testdata/small.json") // just pass the file name
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,5 +21,23 @@ func testValue1(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println(v.String())
-	fmt.Println(p.c.v)
+	fmt.Println()
+
+	for key, vals := range p.c.v {
+		fmt.Println(key)
+		fmt.Println()
+		for _, val := range vals {
+			fmt.Println(val.k)
+			fmt.Println()
+
+			fmt.Println(val.kvs)
+			fmt.Println()
+
+			fmt.Println(val.ps)
+			fmt.Println()
+
+		}
+		fmt.Println("--------------------------")
+
+	}
 }

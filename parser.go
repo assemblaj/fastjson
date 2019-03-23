@@ -35,7 +35,7 @@ func (p *Parser) Parse(s string) (*Value, error) {
 
 	// init value map
 	if p.c.mapped {
-		p.c.v = make(map[string][]string)
+		p.c.v = make(map[string][]*context)
 	}
 
 	v, tail, err := parseValue(b2s(p.b), &p.c)
@@ -58,13 +58,18 @@ func (p *Parser) ParseBytes(b []byte) (*Value, error) {
 	return p.Parse(b2s(b))
 }
 
+type context struct {
+	k   string
+	kvs []kv
+	ps  []*Value
+}
+
 type cache struct {
 	vs []Value
 
 	// value map enabled
 	mapped bool
-
-	v map[string][]string // Maps values (all converted to strings) to root objects
+	v      map[string][]*context // Maps values (all converted to strings) to root objects
 }
 
 func (c *cache) reset() {
@@ -253,14 +258,17 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 			// Update map[value][]root value
 			vstr := kv.v.String()
 
-			r := getRoot(o)
+			// get all of the ancestors of the current value
+			ans := getAncestors(kv.v)
 
-			var rstr string
-			if r != nil {
-				rstr = r.String()
-			}
+			// creates context struct to represent all relevant contextual data for the value
+			con := &context{
+				k:   kv.k,
+				kvs: o.o.kvs,
+				ps:  ans}
 
-			c.v[vstr] = append(c.v[vstr], rstr)
+			// store values as str:[context, context]...
+			c.v[vstr] = append(c.v[vstr], con)
 		}
 
 		if err != nil {
@@ -993,10 +1001,12 @@ var (
 	valueNull  = &Value{t: TypeNull}
 )
 
-func getRoot(v *Value) *Value {
-	var r *Value
-	for v.p != nil {
-		r = v.p
+func getAncestors(v *Value) []*Value {
+	ans := []*Value{}
+	r := v
+	for r.p != nil {
+		r = r.p
+		ans = append(ans, r)
 	}
-	return r
+	return ans
 }
