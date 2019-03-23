@@ -23,6 +23,13 @@ type Parser struct {
 	c cache
 }
 
+func (p *Parser) ValueMap() map[string][]*context {
+	if !p.c.mapped {
+		return nil
+	}
+	return p.c.v
+}
+
 func MappedParser() *Parser {
 	return &Parser{
 		c: cache{

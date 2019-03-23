@@ -23,7 +23,7 @@ func TestValue1(t *testing.T) {
 	fmt.Println(v.String())
 	fmt.Println()
 
-	for key, vals := range p.c.v {
+	for key, vals := range p.ValueMap() {
 		fmt.Println(key)
 		fmt.Println()
 		for _, val := range vals {
@@ -35,9 +35,7 @@ func TestValue1(t *testing.T) {
 
 			fmt.Println(val.ps)
 			fmt.Println()
-
 		}
 		fmt.Println("--------------------------")
-
 	}
 }
