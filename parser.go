@@ -23,6 +23,12 @@ type Parser struct {
 	c cache
 }
 
+func MappedParser() *Parser {
+	return &Parser{
+		c: cache{
+			mapped: true}}
+}
+
 // Parse parses s containing JSON.
 //
 // The returned value is valid until the next call to Parse*.
