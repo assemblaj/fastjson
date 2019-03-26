@@ -83,11 +83,11 @@ type Context struct {
 	ans []*Value
 }
 
-func (c *Context) getKey() string {
+func (c *Context) GetKey() string {
 	return c.k
 }
 
-func (c *Context) getKeys() []string {
+func (c *Context) GetKeys() []string {
 	var keys []string
 
 	for _, kv := range c.kvs {
@@ -97,11 +97,11 @@ func (c *Context) getKeys() []string {
 	return keys
 }
 
-func (c *Context) getParent() *Value {
+func (c *Context) GetParent() *Value {
 	return c.p
 }
 
-func (c *Context) getAncestors() []string {
+func (c *Context) GetAncestors() []string {
 	var ancestors []string
 	var temp []byte
 	var tempS string
