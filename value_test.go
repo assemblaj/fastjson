@@ -7,11 +7,9 @@ import (
 )
 
 func TestValue1(t *testing.T) {
-	var p Parser
+	p := MappedParser()
 
-	p.c.mapped = true
-
-	c, err := ioutil.ReadFile("./testdata/small.json") // just pass the file name
+	c, err := ioutil.ReadFile("./testdata/citm_catalog.json") // just pass the file name
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,18 +21,32 @@ func TestValue1(t *testing.T) {
 	fmt.Println(v.String())
 	fmt.Println()
 
-	for key, vals := range p.ValueMap() {
-		fmt.Println(key)
+	for value, contexts := range p.ValueMap() {
+		fmt.Println("Value: ")
+		fmt.Println(value)
 		fmt.Println()
-		for _, val := range vals {
-			fmt.Println(val.k)
+		fmt.Println("Contexts: ")
+		for _, context := range contexts {
+			fmt.Println("Context ID: ")
+			fmt.Println(context.k)
 			fmt.Println()
 
-			fmt.Println(val.kvs)
+			fmt.Println("MetaData")
+			fmt.Println(context.kvs)
 			fmt.Println()
 
-			fmt.Println(val.ps)
+			fmt.Println("Outer Contexts")
+			fmt.Println("parent: ")
+			fmt.Println(context.p)
 			fmt.Println()
+			fmt.Println("Ancestors: ")
+			fmt.Println(context.ans)
+
+			fmt.Println("=====================")
+			fmt.Println("=====================")
+
+			fmt.Println("=====================")
+
 		}
 		fmt.Println("--------------------------")
 	}

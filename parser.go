@@ -24,16 +24,26 @@ type Parser struct {
 }
 
 func (p *Parser) ValueMap() map[string][]*context {
-	if !p.c.mapped {
+	if !p.c.f.mapped {
 		return nil
 	}
-	return p.c.v
+	return p.c.f.v
+}
+
+func (p *Parser) GetFramingData(data string) map[string][]*context {
+	_, err := p.Parse(data)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return p.ValueMap()
 }
 
 func MappedParser() *Parser {
 	return &Parser{
 		c: cache{
-			mapped: true}}
+			f: &framing{
+				mapped: true,
+				v:      make(map[string][]*context)}}}
 }
 
 // Parse parses s containing JSON.
@@ -45,11 +55,6 @@ func (p *Parser) Parse(s string) (*Value, error) {
 	s = skipWS(s)
 	p.b = append(p.b[:0], s...)
 	p.c.reset()
-
-	// init value map
-	if p.c.mapped {
-		p.c.v = make(map[string][]*context)
-	}
 
 	v, tail, err := parseValue(b2s(p.b), &p.c)
 	if err != nil {
@@ -74,15 +79,20 @@ func (p *Parser) ParseBytes(b []byte) (*Value, error) {
 type context struct {
 	k   string
 	kvs []kv
-	ps  []*Value
+	p   *Value
+	ans []*Value
+}
+
+type framing struct {
+	mapped bool // value map enabled
+
+	v   map[string][]*context // Maps values (all converted to strings) to root objects
+	con *context              // current context
 }
 
 type cache struct {
 	vs []Value
-
-	// value map enabled
-	mapped bool
-	v      map[string][]*context // Maps values (all converted to strings) to root objects
+	f  *framing
 }
 
 func (c *cache) reset() {
@@ -241,6 +251,22 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 	o := c.getValue()
 	o.t = TypeObject
 	o.o.reset()
+
+	// After the object has finished parsing
+	defer o.o.VisitKV(func(kvc kv) {
+		if c.f != nil && c.f.mapped {
+			// Update map[value][]root value
+			vstr := kvc.v.String()
+			cts := c.f.v[vstr]
+			for _, ct := range cts {
+				if ct.p == o {
+					ct.kvs = o.o.kvs
+				}
+			}
+		}
+	})
+
+	// pastCon := c.f.con
 	for {
 		var err error
 		kv := o.o.getKV()
@@ -264,24 +290,28 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 		s = skipWS(s)
 		kv.v, s, err = parseValue(s, c)
 
-		if c.mapped {
-			// set parent object for value
-			kv.v.p = o
-
+		if c.f != nil && c.f.mapped {
 			// Update map[value][]root value
 			vstr := kv.v.String()
 
-			// get all of the ancestors of the current value
-			ans := getAncestors(kv.v)
+			// object that contains this kv
+			kv.v.p = o
 
 			// creates context struct to represent all relevant contextual data for the value
 			con := &context{
-				k:   kv.k,
-				kvs: o.o.kvs,
-				ps:  ans}
+				k: kv.k,
+				p: o}
+
+			// set current context
+			kv.v.cc = con
+
+			// cache it to be used as parent context
+			c.f.con = kv.v.cc
+
+			kv.v.cc.ans = getAncestors(kv.v)
 
 			// store values as str:[context, context]...
-			c.v[vstr] = append(c.v[vstr], con)
+			c.f.v[vstr] = append(c.f.v[vstr], con)
 		}
 
 		if err != nil {
@@ -588,6 +618,22 @@ func (o *Object) Visit(f func(key []byte, v *Value)) {
 	}
 }
 
+// Visit calls f for each item in the o in the original order
+// of the parsed JSON.
+//
+// f cannot hold key and/or v after returning.
+func (o *Object) VisitKV(f func(kvc kv)) {
+	if o == nil {
+		return
+	}
+
+	o.unescapeKeys()
+
+	for _, kv := range o.kvs {
+		f(kv)
+	}
+}
+
 // Value represents any JSON value.
 //
 // Call Type in order to determine the actual type of the JSON value.
@@ -595,11 +641,12 @@ func (o *Object) Visit(f func(key []byte, v *Value)) {
 // Value cannot be used from concurrent goroutines.
 // Use per-goroutine parsers or ParserPool instead.
 type Value struct {
-	o Object
-	a []*Value
-	s string
-	t Type
-	p *Value // Parent
+	o  Object
+	a  []*Value
+	s  string
+	t  Type
+	cc *context // current context
+	p  *Value   // parent
 }
 
 // MarshalTo appends marshaled v to dst and returns the result.
