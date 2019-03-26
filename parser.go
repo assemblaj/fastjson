@@ -83,6 +83,38 @@ type Context struct {
 	ans []*Value
 }
 
+func (c *Context) getKey() string {
+	return c.k
+}
+
+func (c *Context) getKeys() []string {
+	var keys []string
+
+	for _, kv := range c.kvs {
+		keys = append(keys, kv.k)
+	}
+
+	return keys
+}
+
+func (c *Context) getParent() *Value {
+	return c.p
+}
+
+func (c *Context) getAncestors() []string {
+	var ancestors []string
+	var temp []byte
+	var tempS string
+
+	for _, ancestor := range c.ans {
+		temp = ancestor.MarshalTo(temp)
+		tempS = string(temp[:])
+		ancestors = append(ancestors, tempS)
+	}
+
+	return ancestors
+}
+
 type framing struct {
 	mapped bool // value map enabled
 
