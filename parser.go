@@ -23,14 +23,14 @@ type Parser struct {
 	c cache
 }
 
-func (p *Parser) ValueMap() map[string][]*context {
+func (p *Parser) ValueMap() map[string][]*Context {
 	if !p.c.f.mapped {
 		return nil
 	}
 	return p.c.f.v
 }
 
-func (p *Parser) GetFramingData(data string) map[string][]*context {
+func (p *Parser) GetFramingData(data string) map[string][]*Context {
 	_, err := p.Parse(data)
 	if err != nil {
 		fmt.Println(err)
@@ -43,7 +43,7 @@ func MappedParser() *Parser {
 		c: cache{
 			f: &framing{
 				mapped: true,
-				v:      make(map[string][]*context)}}}
+				v:      make(map[string][]*Context)}}}
 }
 
 // Parse parses s containing JSON.
@@ -76,7 +76,7 @@ func (p *Parser) ParseBytes(b []byte) (*Value, error) {
 	return p.Parse(b2s(b))
 }
 
-type context struct {
+type Context struct {
 	k   string
 	kvs []kv
 	p   *Value
@@ -86,8 +86,8 @@ type context struct {
 type framing struct {
 	mapped bool // value map enabled
 
-	v   map[string][]*context // Maps values (all converted to strings) to root objects
-	con *context              // current context
+	v   map[string][]*Context // Maps values (all converted to strings) to root objects
+	con *Context              // current Context
 }
 
 type cache struct {
@@ -297,20 +297,20 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 			// object that contains this kv
 			kv.v.p = o
 
-			// creates context struct to represent all relevant contextual data for the value
-			con := &context{
+			// creates Context struct to represent all relevant Contextual data for the value
+			con := &Context{
 				k: kv.k,
 				p: o}
 
-			// set current context
+			// set current Context
 			kv.v.cc = con
 
-			// cache it to be used as parent context
+			// cache it to be used as parent Context
 			c.f.con = kv.v.cc
 
 			kv.v.cc.ans = getAncestors(kv.v)
 
-			// store values as str:[context, context]...
+			// store values as str:[Context, Context]...
 			c.f.v[vstr] = append(c.f.v[vstr], con)
 		}
 
@@ -645,7 +645,7 @@ type Value struct {
 	a  []*Value
 	s  string
 	t  Type
-	cc *context // current context
+	cc *Context // current Context
 	p  *Value   // parent
 }
 
