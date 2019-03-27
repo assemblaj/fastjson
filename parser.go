@@ -289,6 +289,11 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 		if c.f != nil && c.f.mapped {
 			// Update map[value][]root value
 			vstr := kvc.v.String()
+			if kvc.v.t == typeRawString {
+				// removing quotes that are adding to strings during marshalling
+				vstr = vstr[1 : len(vstr)-1]
+			}
+
 			cts := c.f.v[vstr]
 			for _, ct := range cts {
 				if ct.p == o {
@@ -325,6 +330,10 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 		if c.f != nil && c.f.mapped {
 			// Update map[value][]root value
 			vstr := kv.v.String()
+			if kv.v.t == typeRawString {
+				// removing quotes that are adding to strings during marshalling
+				vstr = vstr[1 : len(vstr)-1]
+			}
 
 			// object that contains this kv
 			kv.v.p = o
