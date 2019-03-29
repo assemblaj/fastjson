@@ -97,8 +97,8 @@ func (c *Context) GetKeys() []string {
 	return keys
 }
 
-func (c *Context) GetParent() *Value {
-	return c.p
+func (c *Context) GetParent() Value {
+	return *c.p
 }
 
 func (c *Context) GetAncestors() []string {
