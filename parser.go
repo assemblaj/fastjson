@@ -327,7 +327,7 @@ func parseObject(s string, c *cache) (*Value, string, error) {
 		s = skipWS(s)
 		kv.v, s, err = parseValue(s, c)
 
-		if c.f != nil && c.f.mapped && kv.v.t != TypeObject {
+		if c.f != nil && c.f.mapped && kv.v.t == TypeString {
 			// Update map[value][]root value
 			vstr := kv.v.String()
 			if kv.v.t == typeRawString {
