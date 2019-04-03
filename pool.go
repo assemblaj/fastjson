@@ -20,6 +20,30 @@ func (pp *ParserPool) Get() *Parser {
 	return v.(*Parser)
 }
 
+type MappedParserPool struct {
+	pool sync.Pool
+}
+
+// Get Mapped Parser form pool
+func (mpp *MappedParserPool) MappedParserGet() *Parser {
+	v := mpp.pool.Get()
+	if v == nil {
+		return MappedParser()
+	}
+	// i'd have loved to only use one if here
+	p := v.(*Parser)
+	if p.c.f == (&framing{}) {
+		return MappedParser()
+	}
+	return p
+}
+
+func (mpp *MappedParserPool) MappedParserPut(p *Parser) {
+	if p.c.f == (&framing{}) {
+		mpp.pool.Put(p)
+	}
+}
+
 // Put returns p to pp.
 //
 // p and objects recursively returned from p cannot be used after p
