@@ -24,7 +24,7 @@ type Parser struct {
 }
 
 func (p *Parser) ValueMap() map[string][]*Context {
-	if !p.c.f.mapped {
+	if p.c.f == nil || !p.c.f.mapped {
 		return nil
 	}
 	return p.c.f.v
